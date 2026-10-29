@@ -1,5 +1,5 @@
 // Concept Cards service worker. Bump VERSION whenever index.html changes so installed copies update.
-const VERSION = 'cc-v16';
+const VERSION = 'cc-v17';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
