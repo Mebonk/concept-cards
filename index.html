@@ -150,9 +150,10 @@ body.selecting main{padding-bottom:110px}
 .qbox input{width:100%;box-sizing:border-box;padding-right:40px}
 .qx{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:30px;height:30px;border:0;border-radius:50%;background:var(--chip,#2a3532);color:var(--sub,#9aa);font-size:14px;line-height:1;padding:0;cursor:pointer}
 .segwrap{position:relative;flex:none}
-.seg{position:absolute;top:calc(100% + 6px);right:0;z-index:6;display:grid;grid-template-columns:repeat(3,66px);gap:4px;padding:6px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.seg{position:absolute;top:calc(100% + 6px);right:0;z-index:6;display:grid;grid-template-columns:repeat(4,66px);gap:4px;padding:6px;border:1px solid var(--line);border-radius:14px;background:var(--surface);box-shadow:0 8px 24px rgba(0,0,0,.25)}
 .seg button{border:0;border-radius:10px;background:transparent;color:var(--sub);height:54px;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font-size:11px}
 .seg button::after{content:attr(data-l)}
+.seg.fromfab{position:fixed;top:auto;right:14px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:30}
 .seg svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;pointer-events:none}
 .seg button.on{background:var(--accent);color:var(--on-accent)}
 .list.compact .row{padding:7px 14px;gap:12px}
@@ -173,6 +174,24 @@ body.selecting main{padding-bottom:110px}
 .list.tile2 .rbadge,.list.tile4 .rbadge{display:block;position:absolute;font-size:11px;line-height:1;padding:2px 5px;border-radius:6px;background:rgba(0,0,0,.62);color:#fff}
 .list.tile2 .rbadge{left:8px;bottom:8px}
 .list.tile4 .rbadge{right:9px;top:9px}
+.list.tile6,.list.tile8{display:grid;background:transparent;overflow:visible;border-radius:0}
+.list.tile6{grid-template-columns:repeat(6,1fr);gap:5px}
+.list.tile8{grid-template-columns:repeat(8,1fr);gap:4px}
+.list.tile6 .row,.list.tile8 .row{position:relative;border:0;background:var(--surface);min-width:0;flex-direction:column;align-items:stretch;gap:2px}
+.list.tile6 .row{padding:3px;border-radius:8px}
+.list.tile8 .row{padding:2px;border-radius:6px}
+.list.tile6 .thumb,.list.tile8 .thumb{width:100%;height:auto;aspect-ratio:1;border-radius:6px}
+.list.tile6 .thumb:not(img),.list.tile8 .thumb:not(img){font-size:0}
+.list.tile6 .thumb:not(img)::after,.list.tile8 .thumb:not(img)::after{content:attr(data-ini);font-size:14px;color:var(--sub)}
+.list.tile8 .thumb:not(img)::after{font-size:11px}
+.list.tile6 .name,.list.tile8 .name{line-height:1.15;text-align:center;white-space:normal;word-break:break-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.list.tile6 .name{font-size:10px}
+.list.tile8 .name{font-size:9px}
+.list.tile6 .chip,.list.tile6 .chips,.list.tile6 .linkrow,.list.tile6 .memo,.list.tile6 .stars,.list.tile6 .rowmore,.list.tile8 .chip,.list.tile8 .chips,.list.tile8 .linkrow,.list.tile8 .memo,.list.tile8 .stars,.list.tile8 .rowmore{display:none}
+.list.tile6 .cbox,.list.tile8 .cbox{position:absolute;top:3px;left:3px;transform:scale(.8);transform-origin:top left}
+.list.tile6 .rbadge,.list.tile8 .rbadge{display:block;position:absolute;line-height:1;border-radius:4px;background:rgba(0,0,0,.62);color:#fff}
+.list.tile6 .rbadge{top:5px;right:5px;font-size:9px;padding:1px 3px}
+.list.tile8 .rbadge{top:3px;right:3px;font-size:8px;padding:1px 2px}
 .list.tile2,.list.tile4{display:grid;gap:8px;background:transparent;overflow:visible;border-radius:0}
 .list.tile2{grid-template-columns:repeat(2,1fr)}
 .list.tile4{grid-template-columns:repeat(4,1fr);gap:6px}
@@ -242,6 +261,8 @@ button.chip{border:0;font:inherit;font-size:12px;cursor:pointer}
     <button data-v="mini" data-l="Dense" aria-label="Dense rows"><svg viewBox="0 0 20 20" aria-hidden="true"><path d="M3 3h14M3 6.5h14M3 10h14M3 13.5h14M3 17h14"/></svg></button>
     <button data-v="tile2" data-l="2 columns" aria-label="Two columns of small boxes"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="3" width="6" height="4" rx="1"/><rect x="11" y="3" width="6" height="4" rx="1"/><rect x="3" y="8" width="6" height="4" rx="1"/><rect x="11" y="8" width="6" height="4" rx="1"/><rect x="3" y="13" width="6" height="4" rx="1"/><rect x="11" y="13" width="6" height="4" rx="1"/></svg></button>
     <button data-v="tile4" data-l="4 columns" aria-label="Four columns of tiny boxes"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="2" y="3" width="2.8" height="4" rx="1"/><rect x="6.8" y="3" width="2.8" height="4" rx="1"/><rect x="11.6" y="3" width="2.8" height="4" rx="1"/><rect x="16.4" y="3" width="2.8" height="4" rx="1"/><rect x="2" y="8" width="2.8" height="4" rx="1"/><rect x="6.8" y="8" width="2.8" height="4" rx="1"/><rect x="11.6" y="8" width="2.8" height="4" rx="1"/><rect x="16.4" y="8" width="2.8" height="4" rx="1"/><rect x="2" y="13" width="2.8" height="4" rx="1"/><rect x="6.8" y="13" width="2.8" height="4" rx="1"/><rect x="11.6" y="13" width="2.8" height="4" rx="1"/><rect x="16.4" y="13" width="2.8" height="4" rx="1"/></svg></button>
+    <button data-v="tile6" data-l="6 columns" aria-label="Six columns of small boxes"><svg viewBox="0 0 20 20" aria-hidden="true" style="stroke-width:1.1"><rect x="1.5" y="3" width="2.1" height="3.2" rx="0.6"/><rect x="4.8" y="3" width="2.1" height="3.2" rx="0.6"/><rect x="8.1" y="3" width="2.1" height="3.2" rx="0.6"/><rect x="11.4" y="3" width="2.1" height="3.2" rx="0.6"/><rect x="14.7" y="3" width="2.1" height="3.2" rx="0.6"/><rect x="18.0" y="3" width="2.1" height="3.2" rx="0.6"/><rect x="1.5" y="8" width="2.1" height="3.2" rx="0.6"/><rect x="4.8" y="8" width="2.1" height="3.2" rx="0.6"/><rect x="8.1" y="8" width="2.1" height="3.2" rx="0.6"/><rect x="11.4" y="8" width="2.1" height="3.2" rx="0.6"/><rect x="14.7" y="8" width="2.1" height="3.2" rx="0.6"/><rect x="18.0" y="8" width="2.1" height="3.2" rx="0.6"/><rect x="1.5" y="13" width="2.1" height="3.2" rx="0.6"/><rect x="4.8" y="13" width="2.1" height="3.2" rx="0.6"/><rect x="8.1" y="13" width="2.1" height="3.2" rx="0.6"/><rect x="11.4" y="13" width="2.1" height="3.2" rx="0.6"/><rect x="14.7" y="13" width="2.1" height="3.2" rx="0.6"/><rect x="18.0" y="13" width="2.1" height="3.2" rx="0.6"/></svg></button>
+    <button data-v="tile8" data-l="8 columns" aria-label="Eight columns of tiny boxes"><svg viewBox="0 0 20 20" aria-hidden="true" style="stroke-width:1.1"><rect x="1.4" y="3" width="1.4" height="3.2" rx="0.6"/><rect x="3.8" y="3" width="1.4" height="3.2" rx="0.6"/><rect x="6.1" y="3" width="1.4" height="3.2" rx="0.6"/><rect x="8.5" y="3" width="1.4" height="3.2" rx="0.6"/><rect x="10.8" y="3" width="1.4" height="3.2" rx="0.6"/><rect x="13.2" y="3" width="1.4" height="3.2" rx="0.6"/><rect x="15.5" y="3" width="1.4" height="3.2" rx="0.6"/><rect x="17.8" y="3" width="1.4" height="3.2" rx="0.6"/><rect x="1.4" y="8" width="1.4" height="3.2" rx="0.6"/><rect x="3.8" y="8" width="1.4" height="3.2" rx="0.6"/><rect x="6.1" y="8" width="1.4" height="3.2" rx="0.6"/><rect x="8.5" y="8" width="1.4" height="3.2" rx="0.6"/><rect x="10.8" y="8" width="1.4" height="3.2" rx="0.6"/><rect x="13.2" y="8" width="1.4" height="3.2" rx="0.6"/><rect x="15.5" y="8" width="1.4" height="3.2" rx="0.6"/><rect x="17.8" y="8" width="1.4" height="3.2" rx="0.6"/><rect x="1.4" y="13" width="1.4" height="3.2" rx="0.6"/><rect x="3.8" y="13" width="1.4" height="3.2" rx="0.6"/><rect x="6.1" y="13" width="1.4" height="3.2" rx="0.6"/><rect x="8.5" y="13" width="1.4" height="3.2" rx="0.6"/><rect x="10.8" y="13" width="1.4" height="3.2" rx="0.6"/><rect x="13.2" y="13" width="1.4" height="3.2" rx="0.6"/><rect x="15.5" y="13" width="1.4" height="3.2" rx="0.6"/><rect x="17.8" y="13" width="1.4" height="3.2" rx="0.6"/></svg></button>
     <button data-v="grid" data-l="Grid" aria-label="Grid view"><svg viewBox="0 0 20 20" aria-hidden="true"><rect x="3" y="3" width="4" height="4" rx="1"/><rect x="8" y="3" width="4" height="4" rx="1"/><rect x="13" y="3" width="4" height="4" rx="1"/><rect x="3" y="8" width="4" height="4" rx="1"/><rect x="8" y="8" width="4" height="4" rx="1"/><rect x="13" y="8" width="4" height="4" rx="1"/><rect x="3" y="13" width="4" height="4" rx="1"/><rect x="8" y="13" width="4" height="4" rx="1"/><rect x="13" y="13" width="4" height="4" rx="1"/></svg></button>
   </div>
   </div>
@@ -253,7 +274,7 @@ button.chip{border:0;font:inherit;font-size:12px;cursor:pointer}
     <h2 id="sheetTitle">New card</h2>
     <label for="name">Name</label>
     <input type="text" id="name" placeholder="Apple" autocomplete="off">
-    <label>Image</label>
+    <label id="imgLabel">Image</label>
     <div class="pick">
       <div class="thumb" id="preview">🖼</div>
       <button type="button" id="pickBtn">Choose image</button>
@@ -377,12 +398,13 @@ button.chip{border:0;font:inherit;font-size:12px;cursor:pointer}
     </div>
   </div>
 </div>
-<div id="selbar" hidden><span id="selcount">0 selected</span><button class="save" id="selCopy" disabled>Copy to…</button></div>
+<div id="selbar" hidden><span id="selcount">0 selected</span><span style="display:flex;gap:8px"><button class="save" id="selMove" disabled>Move to…</button><button class="save" id="selCopy" disabled>Copy to…</button></span></div>
 <input type="file" id="rfile" accept="application/json,.json" multiple hidden>
 <div id="toast" role="status"></div>
 
 <div id="fab" class="fab" hidden>
   <div id="fabmenu" class="fabmenu" hidden>
+    <button type="button" id="jmpView" aria-label="Change view">▦<span>View</span></button>
     <button type="button" id="jmpTitle" aria-label="Title screen">⌂<span>Title screen</span></button>
     <button type="button" id="jmpBack" aria-label="Back one level">‹<span>Back</span></button>
     <button type="button" id="jmpTop" aria-label="Jump to top">⤒<span>Top</span></button>
@@ -407,10 +429,10 @@ let view = null;        // null = folder list, 'all' = every card, otherwise a f
 let sortMode = 'manual', genreFilter = [], lastView, lockY = null;   // Day 13: genreFilter is now a list of selected genre ids; lockY = page scroll while a sheet is open
 try { sortMode = localStorage.getItem('cc-sort') || 'manual'; } catch (e) {}
 let viewMode = 'list', sq = '', qView, countKey = '', cardIO, migrating = false;   // Day 6: view mode, search text, batch rendering
-const BATCH = 60;
+let BATCH = 60;
 let shownCount = BATCH;
 try { viewMode = localStorage.getItem('cc-view') || 'list'; } catch (e) {}
-const reorderOK = () => sortMode === 'manual' && !genreFilter.length && !sq && !['grid', 'tile2', 'tile4'].includes(viewMode);   // manual drag-order only makes sense in the full, unsorted list
+const reorderOK = () => sortMode === 'manual' && !genreFilter.length && !sq && !['grid', 'tile2', 'tile4', 'tile6', 'tile8'].includes(viewMode);   // manual drag-order only makes sense in the full, unsorted list
 let editingFolder = null, movingPlacement = null, editing = null;   // editing = { p, it } while the card sheet edits an existing card
 const scrollMemo = new Map(); let backNav = false;   // Day 17: remembers where you were on each screen, so Back returns you to the same spot
 let selecting = false, selected = new Set(), selView;   // Day 5: multi-select (selected holds placement ids)
@@ -426,12 +448,22 @@ async function reopenDb() { try { db.close(); } catch (e) {} db = await openDB()
 const withDb = async fn => { if (dbDead) await reopenDb(); try { return await fn(); } catch (e) { if (!isDbLost(e)) throw e; logErr('db-reconnect', e); await reopenDb(); return await fn(); } };
 document.addEventListener('visibilitychange', () => { if (!document.hidden && dbDead) reopenDb().catch(() => {}); });
 const all = s => withDb(() => req(db.transaction(s).objectStore(s).getAll()));
-const put = (s, v) => withDb(() => req(db.transaction(s, 'readwrite').objectStore(s).put(v)));
+const fresh = async b => { try { return b instanceof Blob ? new Blob([await b.arrayBuffer()], { type: b.type }) : b; } catch (e) { return b; } };   // a clean in-memory copy of a picture
+const putOnce = (s, v) => withDb(() => req(db.transaction(s, 'readwrite').objectStore(s).put(v)));
+const put = async (s, v) => {
+  try { return await putOnce(s, v); }
+  catch (e) {   // Safari sometimes cannot read picture data it is asked to store: retry once with fresh copies of the pictures
+    if (!/blob|file data/i.test((e && e.message) || '')) throw e;
+    logErr('picture-retry', e); const v2 = { ...v };
+    for (const k of ['thumb', 'image', 'blob']) if (v2[k] instanceof Blob) v2[k] = await fresh(v2[k]);
+    return await putOnce(s, v2);
+  }
+};
 const del = (s, k) => withDb(() => req(db.transaction(s, 'readwrite').objectStore(s).delete(k)));
 const imgRec = id => withDb(() => req(db.transaction('images').objectStore('images').get(id)));
 // Day 17: a card's full picture is kept in its own store (key = card id), so editing text, genres or links never rewrites the picture.
 const imgGet = async it => { if (!it) return null; if (it.image) return it.image; if (!it.hasImg) return null; const r = await imgRec(it.id); return r ? r.blob : null; };
-const imgPut = (id, blob) => put('images', { id, blob });
+const imgPut = async (id, blob) => put('images', { id, blob: await fresh(blob) });
 const stripImage = id => new Promise((ok, no) => {   // read + rewrite in one transaction, so a simultaneous edit is never overwritten
   const t = db.transaction('items', 'readwrite'), st = t.objectStore('items'), g = st.get(id);
   g.onsuccess = () => { const c = g.result; if (c && c.image) { const n = { ...c, hasImg: true }; delete n.image; st.put(n); } };
@@ -484,7 +516,7 @@ async function shrink(file, max = 800, q = 0.82) {
     const c = document.createElement('canvas');
     c.width = Math.round(bmp.width * k);
     c.height = Math.round(bmp.height * k);
-    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    const g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height); g.drawImage(bmp, 0, 0, c.width, c.height);   // transparent areas become white, not black
     return await new Promise(r => c.toBlob(b => r(b || file), 'image/jpeg', q));
   } catch (e) { return file; }
 }
@@ -522,6 +554,7 @@ function entry(list, icon, name, count, go, folderId) {
 const viewKey = () => [view, genreFilter, sq, sortMode, viewMode].join('|');
 let lastRenderKey = '';
 async function render() {
+  BATCH = viewMode === 'tile8' ? 160 : viewMode === 'tile6' ? 120 : 60;
   if (lastRenderKey) scrollMemo.set(lastRenderKey, window.scrollY);
   const keepY = lockY !== null ? lockY : window.scrollY;   // re-drawing the same screen after a save must not throw you back to the top
   await renderInner();
@@ -540,6 +573,7 @@ function fabSync() { const f = $('fab'); if (!f) return; f.hidden = !(view !== n
 window.addEventListener('scroll', fabSync, { passive: true });
 let fabTimer = null; const fabOpen = o => { $('fabmenu').hidden = !o; clearTimeout(fabTimer); if (o) fabTimer = setTimeout(() => fabOpen(false), 5000); };
 $('fabBtn').onclick = () => fabOpen($('fabmenu').hidden);
+$('jmpView').onclick = () => { fabOpen(false); $('seg').classList.add('fromfab'); $('seg').hidden = false; segSync(); };
 $('jmpTop').onclick = () => { fabOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 $('jmpBack').onclick = () => { fabOpen(false); if (view === null) window.scrollTo({ top: 0, behavior: 'smooth' }); else $('backBtn').onclick(); };
 $('jmpTitle').onclick = () => { fabOpen(false); if (view === null) window.scrollTo({ top: 0, behavior: 'smooth' }); else { backNav = false; view = null; render(); } };
@@ -551,7 +585,7 @@ function restoreState() {
   try {
     const st = JSON.parse(localStorage.getItem('cc-state') || 'null'); if (!st) return;
     view = st.view || null; genreFilter = Array.isArray(st.gf) ? st.gf : st.gf ? [st.gf] : []; lastView = view; restoreY = st.y || 0;
-    if (restoreY > 0) { countKey = [view, genreFilter, '', sortMode, viewMode].join('|'); shownCount = Math.min(400, BATCH + Math.ceil(restoreY / ({ mini: 41, tile2: 28, tile4: 22 }[viewMode] || 55))); }
+    if (restoreY > 0) { countKey = [view, genreFilter, '', sortMode, viewMode].join('|'); shownCount = Math.min(400, BATCH + Math.ceil(restoreY / ({ mini: 41, tile2: 28, tile4: 22, tile6: 14, tile8: 9 }[viewMode] || 55))); }
   } catch (e) {}
 }
 window.addEventListener('scroll', () => { clearTimeout(scT); scT = setTimeout(saveState, 300); }, { passive: true });
@@ -683,7 +717,7 @@ async function renderInner() {
     if (it.image || it.hasImg) {
       th = document.createElement('img'); th.className = 'thumb'; th.alt = '';
       (it.thumb ? Promise.resolve(it.thumb) : imgGet(it)).then(blobToURL).then(u => { th.src = u; }).catch(() => {}); th.decoding = 'async';   // data: URLs, because blob: URLs are blocked inside Claude's app panel
-    } else { th = document.createElement('div'); th.className = 'thumb'; th.textContent = '🖼'; }
+    } else { th = document.createElement('div'); th.className = 'thumb'; th.textContent = '🖼'; th.dataset.ini = [...(it.name || '')].slice(0, 2).join(''); }
     const txt = document.createElement('div'); txt.className = 'grow';
     const n = document.createElement('div'); n.className = 'name'; n.textContent = it.name + (linkCount.get(p.itemId) > 1 ? ' 🔗' : '');
     txt.append(n);
@@ -1166,8 +1200,8 @@ $('seg').onclick = e => {
   $('seg').hidden = true; segSync();   // Day 17: the view choices fold away again after one pick
   render();
 };
-document.addEventListener('pointerdown', e => { if (!$('seg').hidden && !e.target.closest('.segwrap')) { $('seg').hidden = true; segSync(); } });
-$('segBtn').onclick = () => { $('seg').hidden = !$('seg').hidden; segSync(); };
+document.addEventListener('pointerdown', e => { if (!$('seg').hidden && !e.target.closest('.segwrap, #jmpView')) { $('seg').hidden = true; segSync(); } });
+$('segBtn').onclick = () => { $('seg').classList.remove('fromfab'); $('seg').hidden = !$('seg').hidden; segSync(); };
 function segSync() { const cur = document.querySelector('#seg button[data-v="' + viewMode + '"] svg'); $('segBtn').innerHTML = cur ? cur.outerHTML : ''; $('segBtn').setAttribute('aria-expanded', !$('seg').hidden); }
 segSync();
 
@@ -1363,7 +1397,7 @@ async function autoSave() {
   const st = formState(); saving = true;
   try {
     const it = editing.it, blob = pickedBlob, cv = coverBlob || blob;
-    const thumb = cv ? await shrink(cv, 320) : it.thumb;
+    const thumb = await fresh(cv ? await shrink(cv, 320) : it.thumb);
     const img = blob || it.image || null;   // an old card may still hold its picture inside: move it out now
     if (img) await imgPut(it.id, img);
     let nx = it.nx || 0, xv = extrasVer;
@@ -1399,12 +1433,16 @@ $('bg').onclick = async e => {   // Day 15: tapping the gap above the sheet leav
 $('pickBtn').onclick = () => $('file').click();
 $('file').onchange = async e => {
   const f = e.target.files[0]; if (!f) return;
+  if (xCur >= 0 && sheetExtras[xCur]) { e.target.value = ''; await takeImage(f); return; }
   pickedBlob = await shrink(f);
   setPreview(pickedBlob);
   e.target.value = '';
   openCrop(pickedBlob);
 };
-async function takeImage(blob) { pickedBlob = await shrink(blob); setPreview(pickedBlob); $('err').textContent = ''; openCrop(pickedBlob); }
+async function takeImage(blob) {   // the picture shown on screen is the one that changes: an extra if one is shown, otherwise the cover
+  if (xCur >= 0 && sheetExtras[xCur]) { sheetExtras[xCur] = await shrink(blob, 600, 0.7); extrasVer++; paintExtra(xCur); drawExtras(); $('err').textContent = ''; return; }
+  pickedBlob = await shrink(blob); setPreview(pickedBlob); $('err').textContent = ''; openCrop(pickedBlob);
+}
 $('pasteBtn').onclick = async () => {   // paste an image copied from a web page or another app
   try {
     for (const ci of await navigator.clipboard.read()) {
@@ -1457,22 +1495,25 @@ $('del').onclick = async () => {
 // ---- multi-select + copy (Day 5) ----
 // Linked copy = another placement of the SAME item (edit once, changes everywhere).
 // Independent copy = a new item cloned from the original, with its own placement.
-function updateSelCount() { $('selcount').textContent = selected.size + ' selected'; $('selCopy').disabled = !selected.size; }
+function updateSelCount() { $('selcount').textContent = selected.size + ' selected'; $('selCopy').disabled = !selected.size; $('selMove').disabled = !selected.size; }
 function setSelecting(on) { selecting = on; selected.clear(); document.body.classList.toggle('selecting', on); render(); }
 let toastT;
 function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('on'); clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('on'), 2800); }
 $('selBtn').onclick = () => setSelecting(!selecting);
-$('selCopy').onclick = () => openCopySheet();
+let selAction = 'copy';
+$('selCopy').onclick = () => { selAction = 'copy'; openCopySheet(); };
+$('selMove').onclick = () => { selAction = 'move'; openCopySheet(); };
 const closeCopySheet = () => $('kbg').classList.remove('on');
 $('kcancel').onclick = closeCopySheet;
 $('kbg').onclick = e => { if (e.target === $('kbg')) closeCopySheet(); };
 
 async function openCopySheet() {
   const folders = await all('folders'), box = $('kopts'); box.textContent = '';
+  const mv = selAction === 'move'; $('kTitle').textContent = mv ? 'Move to folder' : 'Copy to folder'; document.querySelectorAll('#kbg label.radio').forEach(l => { l.hidden = mv; });
   const opt = (label, id, depth) => {
     const b = document.createElement('button'); b.type = 'button'; b.className = 'opt';
     const l = document.createElement('span'); l.textContent = label; l.style.paddingLeft = (depth * 18) + 'px';
-    b.append(l); b.onclick = () => copySelected(id, document.querySelector('input[name=kmode]:checked').value === 'linked');
+    b.append(l); b.onclick = () => mv ? moveSelected(id) : copySelected(id, document.querySelector('input[name=kmode]:checked').value === 'linked');
     box.append(b);
   };
   opt('No folder', null, 0);
@@ -1480,6 +1521,15 @@ async function openCopySheet() {
   $('kbg').classList.add('on');
 }
 
+async function moveSelected(dest) {
+  closeCopySheet(); let n = 0;
+  try {
+    const pls = await all('placements');
+    for (const pid of selected) { const p = pls.find(x => x.id === pid); if (p && folderOf(p) !== dest) { await put('placements', { ...p, folderId: dest }); n++; } }
+    toast('Moved ' + n + ' card' + (n === 1 ? '' : 's'));
+  } catch (e) { logErr('move', e); toast('Could not move the cards.'); }
+  setSelecting(false);
+}
 async function copySelected(dest, linked) {
   closeCopySheet();
   let made = 0, skipped = 0;
@@ -1502,6 +1552,7 @@ async function copySelected(dest, linked) {
 // ---- image preview + crop ----
 // ---- Day 17: up to two extra, smaller pictures per card, folded under the cover ----
 async function drawExtras() {
+  capSync();
   const n = sheetExtras.length; $('xtog').textContent = (xOpen ? '▾ ' : '▸ ') + 'More images (' + n + '/2)'; $('xtog').setAttribute('aria-expanded', xOpen);
   const st = $('xstrip'); st.hidden = !xOpen; st.textContent = ''; if (!xOpen) return;
   sheetExtras.forEach((b, i) => {
@@ -1512,12 +1563,21 @@ async function drawExtras() {
     x.onclick = e => { e.stopPropagation(); sheetExtras.splice(i, 1); extrasVer++; restoreCover(); drawExtras(); };
     d.append(x); st.append(d);
   });
-  if (n < 2) { const a = document.createElement('div'); a.className = 'xs add'; a.textContent = '+'; a.onclick = () => $('xfile').click(); st.append(a); }
+  if (n < 2) { const a = document.createElement('div'); a.className = 'xs add'; a.textContent = '+'; a.setAttribute('aria-label', 'Add an extra from your photos'); a.onclick = () => $('xfile').click(); st.append(a);
+    const pa = document.createElement('div'); pa.className = 'xs add'; pa.textContent = '📋'; pa.style.fontSize = '22px'; pa.setAttribute('aria-label', 'Paste an extra'); pa.onclick = pasteExtra; st.append(pa); }
 }
 function restoreCover() { xCur = -1; const pv = $('preview'); if (pvBlob) { pv.textContent = ''; blobToURL(pvBlob).then(u => { if (xCur === -1) pv.style.background = 'center/cover url("' + u + '")'; }).catch(() => {}); } else { pv.style.background = ''; pv.textContent = '🖼'; } }
 function showCompare(i) {   // the tapped extra takes the cover's place on screen so you can compare; tap it again to bring the cover back
   if (xCur === i) { restoreCover(); drawExtras(); return; }
-  xCur = i; const pv = $('preview'); pv.textContent = ''; blobToURL(sheetExtras[i]).then(u => { if (xCur === i) pv.style.background = 'center/cover url("' + u + '")'; }).catch(() => {}); drawExtras();
+  xCur = i; paintExtra(i); drawExtras();
+}
+function paintExtra(i) { const pv = $('preview'); pv.textContent = ''; blobToURL(sheetExtras[i]).then(u => { if (xCur === i) pv.style.background = 'center/cover url("' + u + '")'; }).catch(() => {}); }
+function capSync() { $('imgLabel').textContent = xCur >= 0 ? 'Image · Extra ' + (xCur + 1) : (sheetExtras.length || xOpen) ? 'Image · Cover' : 'Image'; $('cropBtn').hidden = xCur >= 0 || !pvBlob; }
+async function pasteExtra() {
+  try {
+    for (const ci of await navigator.clipboard.read()) { const t = ci.types.find(x => x.startsWith('image/')); if (t && sheetExtras.length < 2) { sheetExtras.push(await shrink(await ci.getType(t), 600, 0.7)); extrasVer++; drawExtras(); $('err').textContent = ''; return; } }
+    $('err').textContent = 'No image on the clipboard. Long-press an image on a web page and choose Copy first.';
+  } catch (e) { $('err').textContent = 'Paste is blocked here. Use Choose image, or paste into the Name or Memo box while this extra is shown.'; }
 }
 $('xtog').onclick = () => { xOpen = !xOpen; if (!xOpen && xCur >= 0) restoreCover(); drawExtras(); };
 $('xfile').onchange = async () => { const f = $('xfile').files[0]; $('xfile').value = ''; if (!f || sheetExtras.length >= 2) return; sheetExtras.push(await shrink(f, 600, 0.7)); extrasVer++; drawExtras(); };
@@ -1532,7 +1592,7 @@ function setPreview(blob) {
   imgVer++; xCur = -1;
   const pv = $('preview'); pv.textContent = '';
   if (blob) {
-    pvBlob = blob; $('cropBtn').hidden = false;
+    pvBlob = blob; $('cropBtn').hidden = false; capSync();
     blobToURL(blob).then(u => { if (pvBlob === blob) pv.style.background = 'center/cover url("' + u + '")'; }).catch(() => {});
   } else { pvBlob = null; pv.style.background = ''; pv.textContent = '🖼'; $('cropBtn').hidden = true; }
 }
