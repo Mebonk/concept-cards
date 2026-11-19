@@ -65,6 +65,7 @@ main{max-width:640px;margin:0 auto;padding:0 14px 40px}
 .upd button,.nudge button{border:0;border-radius:10px;background:var(--accent);color:var(--on-accent);padding:9px 14px;font-weight:600;font-size:15px}
 .nudge{margin:12px 14px 0;padding:12px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--accent);display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px}
 .diag summary{cursor:pointer}.diag pre{white-space:pre-wrap;word-break:break-word;font-size:12px;margin:8px 0}.diag button{margin-right:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;padding:6px 12px}
+.xmsg{margin:8px 0 0;font-size:13px;color:var(--sub)}.xmsg input{margin-top:6px;width:100%;box-sizing:border-box;font-size:16px}
 .xtog{display:block;margin:8px 0 0;padding:12px 14px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--sub);font-size:14px}
 .xstrip{display:flex;gap:12px;margin:10px 0 0 2px}
 .xs{position:relative;width:84px;height:84px;border-radius:12px;border:1px solid var(--line);background:var(--bg) center/cover;flex:none}
@@ -284,6 +285,7 @@ button.chip{border:0;font:inherit;font-size:12px;cursor:pointer}
     </div>
     <button type="button" id="xtog" class="xtog" aria-expanded="false"></button>
     <div id="xstrip" class="xstrip" hidden></div>
+    <div id="xmsg" class="xmsg" hidden><div>Your phone did not hand over the picture directly. Long-press the box below and choose Paste.</div><input type="text" id="xpaste" placeholder="Long-press here, then Paste" autocomplete="off" autocorrect="off" spellcheck="false"></div>
     <input type="file" id="xfile" accept="image/*" hidden>
     <label>Weblinks</label>
     <div id="links"></div>
@@ -1455,7 +1457,7 @@ $('pasteBtn').onclick = async () => {   // paste an image copied from a web page
 document.addEventListener('paste', e => {   // pasting into any box in the open card sheet also works
   if (!$('bg').classList.contains('on')) return;
   const f = [...((e.clipboardData && e.clipboardData.files) || [])].find(x => x.type.startsWith('image/'));
-  if (f) { e.preventDefault(); takeImage(f); }
+  if (f) { e.preventDefault(); if (pendingExtraPaste && sheetExtras.length < 2) { pendingExtraPaste = false; $('xmsg').hidden = true; addExtraFrom(f); } else takeImage(f); }
 });
 $('save').onclick = async () => {
   const name = $('name').value.trim();
@@ -1573,16 +1575,29 @@ function showCompare(i) {   // the tapped extra takes the cover's place on scree
 }
 function paintExtra(i) { const pv = $('preview'); pv.textContent = ''; blobToURL(sheetExtras[i]).then(u => { if (xCur === i) pv.style.background = 'center/cover url("' + u + '")'; }).catch(() => {}); }
 function capSync() { $('imgLabel').textContent = xCur >= 0 ? 'Image · Extra ' + (xCur + 1) : (sheetExtras.length || xOpen) ? 'Image · Cover' : 'Image'; $('cropBtn').hidden = xCur >= 0 || !pvBlob; }
+let pendingExtraPaste = false;
+async function addExtraFrom(blob) { if (sheetExtras.length >= 2) return; sheetExtras.push(await shrink(blob, 600, 0.7)); extrasVer++; drawExtras(); $('err').textContent = ''; }
 async function pasteExtra() {
+  $('xmsg').hidden = true; pendingExtraPaste = false;
   try {
-    for (const ci of await navigator.clipboard.read()) { const t = ci.types.find(x => x.startsWith('image/')); if (t && sheetExtras.length < 2) { sheetExtras.push(await shrink(await ci.getType(t), 600, 0.7)); extrasVer++; drawExtras(); $('err').textContent = ''; return; } }
-    $('err').textContent = 'No image on the clipboard. Long-press an image on a web page and choose Copy first.';
-  } catch (e) { $('err').textContent = 'Paste is blocked here. Use Choose image, or paste into the Name or Memo box while this extra is shown.'; }
+    const seen = [];
+    for (const ci of await navigator.clipboard.read()) {
+      seen.push(ci.types.join('+'));
+      const t = ci.types.find(x => x.startsWith('image/')); if (t) { await addExtraFrom(await ci.getType(t)); return; }
+      if (ci.types.includes('text/html')) {   // some apps put the picture inside web-page markup
+        const m = /<img[^>]+src=["']([^"']+)["']/i.exec(await (await ci.getType('text/html')).text());
+        if (m) { try { const r = await fetch(m[1]); if (r.ok) { await addExtraFrom(await r.blob()); return; } } catch (e) {} }
+      }
+    }
+    logErr('clipboard-types', seen.join(' | ') || 'empty');
+  } catch (e) { logErr('clipboard-read', e); }
+  pendingExtraPaste = true; $('xmsg').hidden = false; $('xpaste').value = ''; $('xpaste').focus();   // fall back to a normal paste into a visible box
 }
-$('xtog').onclick = () => { xOpen = !xOpen; if (!xOpen && xCur >= 0) restoreCover(); drawExtras(); };
+$('xtog').onclick = () => { xOpen = !xOpen; if (!xOpen) { pendingExtraPaste = false; $('xmsg').hidden = true; } if (!xOpen && xCur >= 0) restoreCover(); drawExtras(); };
 $('xfile').onchange = async () => { const f = $('xfile').files[0]; $('xfile').value = ''; if (!f || sheetExtras.length >= 2) return; sheetExtras.push(await shrink(f, 600, 0.7)); extrasVer++; drawExtras(); };
 $('preview').addEventListener('click', () => { if (xCur >= 0) { restoreCover(); drawExtras(); } });
 async function loadExtras(it) {
+  pendingExtraPaste = false; $('xmsg').hidden = true;
   sheetExtras = []; extrasVer = 0; extrasSaved = 0; xOpen = false; xCur = -1; drawExtras();
   if (!it || !it.nx) return;
   const xs = []; for (let k = 1; k <= it.nx; k++) { const r = await imgRec(it.id + ':' + k); if (r && r.blob) xs.push(r.blob); }
