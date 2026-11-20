@@ -5,23 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
 <meta name="apple-mobile-web-app-title" content="Concepts">
-<meta name="theme-color" content="#f3f5f4" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0d1210" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#000000">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
 <title>Concept Cards</title>
 <style>
 :root{
-  --bg:#f3f5f4;--surface:#fff;--ink:#14201c;--sub:#68736e;--line:#dfe5e2;--accent:#0f766e;--on-accent:#fff;--thumb:#e6ece9;--gold:#d99a00;--staroff:#c5cdc9;
+  --bg:#000000;--surface:#121212;--ink:#f5f5f5;--sub:#8a8a8e;--line:#242424;--accent:#8e8e93;--on-accent:#000000;--thumb:#1c1c1c;--gold:#f2b73d;--staroff:#333333;
+  color-scheme:dark;
   box-sizing:border-box;
   padding-top:env(safe-area-inset-top,0px);
   padding-bottom:env(safe-area-inset-bottom,0px);
-}
-@media (prefers-color-scheme:dark){
-  :root{--bg:#0d1210;--surface:#171e1b;--ink:#eef3f0;--sub:#92a099;--line:#26302c;--accent:#4fd1c0;--on-accent:#06201c;--thumb:#222c28;--gold:#f2b73d;--staroff:#35413c}
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{overscroll-behavior-y:none;-webkit-text-size-adjust:100%}
@@ -45,6 +42,10 @@ main{max-width:640px;margin:0 auto;padding:0 14px 40px}
 .sheet-bg.on{display:flex}
 .sheet{width:100%;max-width:640px;background:var(--surface);border-radius:20px 20px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom,0px));max-height:92%;overflow:auto}
 .sheet h2{margin:0 0 14px;font-size:20px}
+.shead{position:sticky;top:-18px;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;margin:-18px -18px 6px;padding:18px 18px 8px;background:var(--surface)}
+.shead h2{margin:0}
+.favbtn{flex:none;width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--bg);font-size:22px;line-height:1;padding:0;opacity:.45;filter:grayscale(1)}
+.favbtn[aria-pressed="true"]{opacity:1;filter:none;border-color:var(--gold)}
 /* Day 14: the card sheet is a full page that scrolls inside itself, so the keyboard never drags the screen */
 /* Day 15: the card page now follows the visible area (above the keyboard) like the other sheets, so only the page inside scrolls */
 /* Day 15: the card sheet is no longer full screen. The dimmed gap above it is the exit: tap it and your edits are kept */
@@ -272,7 +273,7 @@ button.chip{border:0;font:inherit;font-size:12px;cursor:pointer}
 
 <div class="sheet-bg" id="bg">
   <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
-    <h2 id="sheetTitle">New card</h2>
+    <div class="shead"><h2 id="sheetTitle">New card</h2><button type="button" id="favBtn" class="favbtn" aria-pressed="false" aria-label="Star this card (adds a star to its name)">⭐</button></div>
     <label for="name">Name</label>
     <input type="text" id="name" placeholder="Apple" autocomplete="off">
     <label id="imgLabel">Image</label>
@@ -678,7 +679,7 @@ async function renderInner() {
   genreFilter = genreFilter.filter(id => genres.includes(id));
   let shown = genreFilter.length ? inView.filter(p => genreFilter.every(g => gidsOf(p).includes(g))) : inView.slice();   // several genres = cards that have all of them
   // Day 13: search looks at card names only; genres are filtered with the Genres button
-  if (sq) shown = shown.filter(p => nameOf(p).toLowerCase().includes(sq));
+  if (sq) shown = shown.filter(p => nameOf(p).toLowerCase().replace(/\uFE0F/g, '').includes(sq));
   if (sortMode === 'name') shown.sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
   else if (sortMode === 'rating') shown.sort((a, b) => ratingOf(b) - ratingOf(a) || nameOf(a).localeCompare(nameOf(b)));   // Highest tier first; unrated cards last
   else if (sortMode === 'genre') shown.sort((a, b) => (genreOf(a) || '\uffff').localeCompare(genreOf(b) || '\uffff') || nameOf(a).localeCompare(nameOf(b)));
@@ -686,7 +687,7 @@ async function renderInner() {
   else if (sortMode === 'oldest') shown.sort((a, b) => ((items.get(a.itemId) || {}).createdAt || 0) - ((items.get(b.itemId) || {}).createdAt || 0) || nameOf(a).localeCompare(nameOf(b)));
   // Day 12: while searching, names that start with the text come first, then names with a word starting with it, then other name matches (stable, so your sort order still applies inside each group)
   if (sq) {
-    const rankOf = p => { const n = nameOf(p).toLowerCase(); return n.startsWith(sq) ? 0 : n.split(/[\s\-_\/・]+/).some(w => w.startsWith(sq)) ? 1 : n.includes(sq) ? 2 : 3; };
+    const rankOf = p => { const n = nameOf(p).toLowerCase().replace(/\uFE0F/g, ''); return n.startsWith(sq) ? 0 : n.split(/[\s\-_\/・]+/).some(w => w.startsWith(sq)) ? 1 : n.includes(sq) ? 2 : 3; };
     const rk = new Map(shown.map(p => [p, rankOf(p)]));
     shown.sort((a, b) => rk.get(a) - rk.get(b));
   }
@@ -1194,7 +1195,7 @@ $('gdel').onclick = async () => {   // deleting the genre itself removes it from
 let qTimer;
 function qSync() { $('qx').hidden = !$('q').value; }
 $('qx').onclick = () => { $('q').value = ''; qSync(); clearTimeout(qTimer); sq = ''; render(); $('q').focus(); };
-$('q').oninput = () => { qSync(); clearTimeout(qTimer); qTimer = setTimeout(() => { sq = $('q').value.trim().toLowerCase(); render(); }, 150); };
+$('q').oninput = () => { qSync(); clearTimeout(qTimer); qTimer = setTimeout(() => { sq = $('q').value.trim().toLowerCase().replace(/\uFE0F/g, ''); render(); }, 150); };
 $('seg').onclick = e => {
   const b = e.target.closest('button'); if (!b) return;
   viewMode = b.dataset.v;
@@ -1357,7 +1358,7 @@ function openSheet(p, it, auto) {
   $('sheetTitle').textContent = it ? 'Edit card' : 'New card';
   $('save').textContent = 'Save card'; $('save').hidden = !!it; $('cancel').textContent = it ? 'Done' : 'Cancel';
   $('del').hidden = !it; delArmed = false; $('del').textContent = 'Delete';
-  $('name').value = it ? it.name : '';
+  $('name').value = it ? it.name : ''; favSync();
   setSheetLinks(it ? linksOf(it) : []);
   loadExtras(it).catch(() => {});
   $('memo').value = it ? it.memo || '' : '';
@@ -1377,7 +1378,7 @@ function openSheet(p, it, auto) {
   if (!it) {
     const d = loadDraft();
     if (d) {
-      $('name').value = d.n || ''; setSheetLinks((d.l || (d.u ? [[d.u, '']] : [])).map(x => ({ url: x[0] || '', label: x[1] || '' }))); $('memo').value = d.m || '';
+      $('name').value = d.n || ''; favSync(); setSheetLinks((d.l || (d.u ? [[d.u, '']] : [])).map(x => ({ url: x[0] || '', label: x[1] || '' }))); $('memo').value = d.m || '';
       sheetG = new Set(d.g || []); sheetRating = d.r || 0; drawRating(); drawGpick();
       if (d.img) fetch(d.img).then(r => r.blob()).then(bl => { if ($('bg').classList.contains('on') && !editing && !pickedBlob) { pickedBlob = bl; setPreview(bl); } }).catch(() => {});
       toast('Draft restored');
@@ -1553,6 +1554,13 @@ async function copySelected(dest, linked) {
 
 // ---- image preview + crop ----
 // ---- Day 17: up to two extra, smaller pictures per card, folded under the cover ----
+function favSync() { $('favBtn').setAttribute('aria-pressed', /\u2B50/.test($('name').value)); }
+$('favBtn').onclick = () => {   // the star lives in the card's name, so searching for the star finds every starred card
+  const n = $('name'), v = n.value;
+  n.value = /\u2B50/.test(v) ? v.replace(/\u2B50\uFE0F?/g, '').replace(/\s{2,}/g, ' ').trim() : ('⭐ ' + v).trim();
+  n.dispatchEvent(new Event('input', { bubbles: true })); favSync();
+};
+$('name').addEventListener('input', favSync);
 async function drawExtras() {
   capSync();
   const n = sheetExtras.length; $('xtog').textContent = (xOpen ? '▾ ' : '▸ ') + 'More images (' + n + '/2)'; $('xtog').setAttribute('aria-expanded', xOpen);
