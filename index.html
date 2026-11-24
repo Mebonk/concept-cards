@@ -62,6 +62,11 @@ main{max-width:640px;margin:0 auto;padding:0 14px 40px}
 .lrow .ltag{grid-column:1/5;grid-row:2;font-size:12px;color:var(--sub)}
 .lrow .ltag input[type="text"]{margin-top:3px;padding:8px 12px;font-size:16px;border-style:dashed}
 .lhint{color:#c0752b;margin-top:3px}
+.lhead{display:flex;align-items:center;justify-content:space-between}.lhead label{margin:0}
+.lre{border:1px solid var(--line);background:var(--bg);color:var(--sub);border-radius:10px;padding:6px 12px;font-size:14px}.lre.on{color:var(--accent);border-color:var(--accent)}
+.lrow .lbtn:disabled{opacity:.3}
+input:not([type=file]),textarea,select{font-size:16px!important}
+.list.tile2 .row,.list.tile4 .row,.list.tile6 .row,.list.tile8 .row{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .upd{position:fixed;left:12px;right:12px;bottom:calc(76px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border-radius:14px;background:var(--ink);color:var(--bg);box-shadow:0 6px 20px rgba(0,0,0,.35)}
 .upd button,.nudge button{border:0;border-radius:10px;background:var(--accent);color:var(--on-accent);padding:9px 14px;font-weight:600;font-size:15px}
 .nudge{margin:12px 14px 0;padding:12px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--accent);display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:14px}
@@ -288,7 +293,7 @@ button.chip{border:0;font:inherit;font-size:12px;cursor:pointer}
     <div id="xstrip" class="xstrip" hidden></div>
     <div id="xmsg" class="xmsg" hidden><div>Your phone did not hand over the picture directly. Long-press the box below and choose Paste.</div><input type="text" id="xpaste" placeholder="Long-press here, then Paste" autocomplete="off" autocorrect="off" spellcheck="false"></div>
     <input type="file" id="xfile" accept="image/*" hidden>
-    <label>Weblinks</label>
+    <div class="lhead"><label>Weblinks</label><button type="button" id="lreorder" class="lre" hidden>⇅ Order</button></div>
     <div id="links"></div>
     <button type="button" class="ladd" id="ladd">+ Add link</button>
     <label>Genres (tap to add or remove)</label>
@@ -558,6 +563,7 @@ const viewKey = () => [view, genreFilter, sq, sortMode, viewMode].join('|');
 let lastRenderKey = '';
 async function render() {
   BATCH = viewMode === 'tile8' ? 160 : viewMode === 'tile6' ? 120 : 60;
+  const _t0 = performance.now();
   if (lastRenderKey) scrollMemo.set(lastRenderKey, window.scrollY);
   const keepY = lockY !== null ? lockY : window.scrollY;   // re-drawing the same screen after a save must not throw you back to the top
   await renderInner();
@@ -571,12 +577,24 @@ async function render() {
   if (backNav) { backNav = false; if (lastRenderKey !== viewKey()) { const y = scrollMemo.get(viewKey()); if (y) window.scrollTo(0, y); } }
   lastRenderKey = viewKey();
   saveState(); fabSync();
+  { const ms = Math.round(performance.now() - _t0); if (ms > 800) logErr('slow-render', ms + ' ms in ' + viewMode + ' view'); }
 }
 function fabSync() { const f = $('fab'); if (!f) return; f.hidden = !(view !== null || window.scrollY > 400) || selecting; if (f.hidden) $('fabmenu').hidden = true; }
 window.addEventListener('scroll', fabSync, { passive: true });
 let fabTimer = null; const fabOpen = o => { $('fabmenu').hidden = !o; clearTimeout(fabTimer); if (o) fabTimer = setTimeout(() => fabOpen(false), 5000); };
 $('fabBtn').onclick = () => fabOpen($('fabmenu').hidden);
 $('jmpView').onclick = () => { fabOpen(false); $('seg').classList.add('fromfab'); $('seg').hidden = false; segSync(); };
+(function () {   // in the box views the ⋯ button is hidden, so holding a box opens "Move to folder"
+  let t = null, sx = 0, sy = 0, until = 0, fired = false;
+  document.addEventListener('pointerdown', e => {
+    if (!/^tile/.test(viewMode) || selecting) return; const row = e.target.closest && e.target.closest('.list .row[data-kind=card]'); if (!row || !row._move) return;
+    sx = e.clientX; sy = e.clientY; clearTimeout(t);
+    t = setTimeout(() => { t = null; fired = true; try { navigator.vibrate && navigator.vibrate(12); } catch (x) {} row._move(); }, 550);
+  });
+  document.addEventListener('pointermove', e => { if (t && Math.hypot(e.clientX - sx, e.clientY - sy) > 8) { clearTimeout(t); t = null; } });
+  ['pointerup', 'pointercancel'].forEach(n => document.addEventListener(n, () => { clearTimeout(t); t = null; if (fired) { fired = false; until = Date.now() + 150; } }));   // only the tap that ends the hold is ignored
+  document.addEventListener('click', e => { if (Date.now() < until) { e.stopPropagation(); e.preventDefault(); } }, true);   // the release after a hold must not tap anything
+})();
 $('jmpTop').onclick = () => { fabOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 $('jmpBack').onclick = () => { fabOpen(false); if (view === null) window.scrollTo({ top: 0, behavior: 'smooth' }); else $('backBtn').onclick(); };
 $('jmpTitle').onclick = () => { fabOpen(false); if (view === null) window.scrollTo({ top: 0, behavior: 'smooth' }); else { backNav = false; view = null; render(); } };
@@ -759,6 +777,7 @@ async function renderInner() {
     const mv = document.createElement('button'); mv.className = 'rowmore'; mv.textContent = '⋯';
     mv.setAttribute('aria-label', 'Move ' + it.name + ' to a folder');
     mv.onclick = () => { if (document.querySelector('.sheet-bg.on')) return; openMoveSheet(p, folders); };
+    rw._move = () => { if (document.querySelector('.sheet-bg.on')) return; openMoveSheet(p, folders); };
     rw.append(th, txt, mv); list.append(rw);
   };
   // Day 6: draw cards in batches; the next batch loads as you scroll near the end
@@ -872,13 +891,21 @@ function addDiag(main) {
 }
 async function addNudge(main) {   // a gentle reminder on the title screen when the last backup is old or many cards are new
   let last = null, n0 = 0; try { last = localStorage.getItem('cc-backup'); n0 = +(localStorage.getItem('cc-backup-n') || 0); } catch (e) {}
-  const n = (await all('items')).length; if (!n || view !== null) return;
+  const n = await withDb(() => req(db.transaction('items').objectStore('items').count())); if (!n || view !== null) return;   // count only: never read every card just to count them
   const days = last ? Math.floor((Date.now() - +last) / 864e5) : null, fresh = n - n0;
   if (last && days < 14 && fresh < 20) return;
   const d = document.createElement('div'); d.className = 'nudge';
   const t = document.createElement('span'); t.textContent = last ? 'Last backup ' + (days === 0 ? 'today' : days + ' days ago') + ', ' + Math.max(fresh, 0) + ' new cards since.' : 'No backup yet for your ' + n + ' cards.';
   const b = document.createElement('button'); b.type = 'button'; b.textContent = 'Back up now'; b.onclick = doBackup; d.append(t, b);
   if (view === null && main.isConnected) { const old = main.querySelector('.nudge'); if (old) old.remove(); main.prepend(d); }
+}
+function showSafeStart(go) {   // shown when the last start never finished: back up first, then continue
+  const m = $('main'); m.textContent = '';
+  const e = document.createElement('div'); e.className = 'empty'; const b = document.createElement('b'); b.textContent = 'Safe start'; e.append(b, 'Last time the app did not finish opening. That can happen when the phone is hot or low on memory. Your cards are untouched. You can back up first, then open normally.');
+  const row = document.createElement('div'); row.className = 'nudge'; row.style.margin = '16px 0 0';
+  const a = document.createElement('button'); a.type = 'button'; a.textContent = 'Back up now'; a.onclick = () => doBackup();
+  const c = document.createElement('button'); c.type = 'button'; c.textContent = 'Open normally'; c.onclick = () => go();
+  row.append(a, c); e.append(row); m.append(e);
 }
 function renderBackup(main) {
   addNudge(main).catch(() => {});
@@ -1295,7 +1322,7 @@ $('mbg').onclick = e => { if (e.target === $('mbg')) closeMoveSheet(); };
 let coverBlob = null, snap = '', lastDraftState = '', draftT = null, draftImg = null, draftImgVer = -1, imgVer = 0;
 // Day 15: a card can hold several weblinks, each with an optional name. Cards saved before this have a single 'url'.
 const linksOf = it => Array.isArray(it.links) ? it.links : it.url ? [{ url: it.url, label: '' }] : [];
-let sheetLinks = [];
+let sheetLinks = [], linkReorder = false;
 const linksNow = () => sheetLinks.filter(l => l.url.trim() || (l.label || '').trim());
 const looksUrl = v => /^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test((v || '').trim());
 // Day 17: a web address typed into a name box is saved as a link of its own
@@ -1305,9 +1332,10 @@ const linksToSave = () => {
   sheetLinks.forEach(l => { const lb = (l.label || '').trim(); if (looksUrl(lb)) { add(l.url, ''); add(lb, ''); } else add(l.url, lb); });
   return out.slice(0, 20);
 };
-const setSheetLinks = list => { sheetLinks = list.map(l => ({ url: l.url || '', label: l.label || '' })); if (!sheetLinks.length) sheetLinks = [{ url: '', label: '' }]; drawLinks(); };
+const setSheetLinks = list => { linkReorder = false; sheetLinks = list.map(l => ({ url: l.url || '', label: l.label || '' })); if (!sheetLinks.length) sheetLinks = [{ url: '', label: '' }]; drawLinks(); };
 function drawLinks() {
   const box = $('links'); box.textContent = '';
+  $('lreorder').hidden = sheetLinks.length < 2; $('lreorder').classList.toggle('on', linkReorder);
   sheetLinks.forEach((l, i) => {
     const r = document.createElement('div'); r.className = 'lrow';
     const u = document.createElement('input'); u.type = 'url'; u.placeholder = 'applelover.com'; u.value = l.url; u.autocapitalize = 'none'; u.setAttribute('autocorrect', 'off'); u.setAttribute('aria-label', 'Weblink ' + (i + 1));
@@ -1323,7 +1351,15 @@ function drawLinks() {
     t.oninput = () => { l.label = t.value; sync(); };
     t.onchange = () => { const v = t.value.trim(); if (!looksUrl(v)) return; l.label = ''; if (l.url.trim()) sheetLinks.splice(i + 1, 0, { url: v, label: '' }); else l.url = v; drawLinks(); };
     x.onclick = () => { sheetLinks.splice(i, 1); drawLinks(); };
-    tw.append('Display name (optional)', t, hint); sync(); r.append(u, nb, a, x, tw); box.append(r);
+    tw.append('Display name (optional)', t, hint); sync(); if (linkReorder) {   // order mode: the pencil and open buttons become up and down
+      const up = document.createElement('button'), dn = document.createElement('button');
+      up.type = dn.type = 'button'; up.className = 'lbtn lname'; dn.className = 'lbtn lopen'; up.textContent = '▲'; dn.textContent = '▼'; up.setAttribute('aria-label', 'Move link up'); dn.setAttribute('aria-label', 'Move link down');
+      up.disabled = i === 0; dn.disabled = i === sheetLinks.length - 1;
+      up.onclick = () => { [sheetLinks[i - 1], sheetLinks[i]] = [sheetLinks[i], sheetLinks[i - 1]]; drawLinks(); };
+      dn.onclick = () => { [sheetLinks[i + 1], sheetLinks[i]] = [sheetLinks[i], sheetLinks[i + 1]]; drawLinks(); };
+      r.append(u, up, dn, x, tw);
+    } else r.append(u, nb, a, x, tw);
+    box.append(r);
   });
 }
 $('ladd').onclick = () => {
@@ -1408,6 +1444,7 @@ async function autoSave() {
     const n = { ...it, name, links: linksToSave(), memo: $('memo').value.trim(), genres: [...sheetG], rating: sheetRating, hasImg: !!(img || it.hasImg), thumb, nx };
     delete n.image; delete n.url;
     await put('items', n); editing.it = n; if (img) editing.img = img; pickedBlob = null; coverBlob = null; snap = st; extrasSaved = xv;
+    if (editing.p && !editing.bumped) { editing.bumped = true; const np = { ...editing.p, order: Date.now() }; await put('placements', np); editing.p = np; }   // Day 17: edited cards rise to the top of the manual order, like new ones
     if (/^Auto-save failed/.test($('err').textContent)) $('err').textContent = '';
   } catch (e) { logErr('auto-save', e); $('err').textContent = 'Auto-save failed (' + ((e && ((e.name || '') + ' ' + (e.message || ''))) || 'unknown').trim().slice(0, 90) + '). Your edits are still here and it will try again.'; }
   finally { saving = false; }
@@ -1561,6 +1598,7 @@ $('favBtn').onclick = () => {   // the star lives in the card's name, so searchi
   n.dispatchEvent(new Event('input', { bubbles: true })); favSync();
 };
 $('name').addEventListener('input', favSync);
+$('lreorder').onclick = () => { linkReorder = !linkReorder; drawLinks(); };
 async function drawExtras() {
   capSync();
   const n = sheetExtras.length; $('xtog').textContent = (xOpen ? '▾ ' : '▸ ') + 'More images (' + n + '/2)'; $('xtog').setAttribute('aria-expanded', xOpen);
@@ -1793,7 +1831,7 @@ async function copyText(t) {
 
 // Day 13: while any sheet is open, freeze the page behind it and keep the dim layer matched to the visible area (the keyboard shrinks it)
 const vv = window.visualViewport;
-function fitSheets() { if (!vv) return; const st = document.documentElement.style; st.setProperty('--vvh', vv.height + 'px'); st.setProperty('--vvt', vv.offsetTop + 'px'); }
+function fitSheets() { if (!vv || vv.scale > 1.02) return; const st   /* zoomed in: keep the sheet where it is instead of chasing the zoom */  = document.documentElement.style; st.setProperty('--vvh', vv.height + 'px'); st.setProperty('--vvt', vv.offsetTop + 'px'); }
 if (vv) { vv.addEventListener('resize', fitSheets); vv.addEventListener('scroll', fitSheets); fitSheets(); }
 function syncLock() {
   const open = !!document.querySelector('.sheet-bg.on'), b = document.body.style;
@@ -1819,16 +1857,23 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
 
 (async () => {
   try {
+    const wasBooting = (() => { try { return localStorage.getItem('cc-booting') === '1'; } catch (e) { return false; } })();
+    try { localStorage.setItem('cc-booting', '1'); } catch (e) {}
     db = await openDB();
     try { await migrateGenres(); } catch (e) {}
-    if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
-    restoreState();
-    const wantView = view;
-    try { await render(); } catch (e) { logErr('render', e); }
-    migrateImages();
-    if (restoreY && view === wantView) { const y = restoreY; requestAnimationFrame(() => window.scrollTo(0, y)); }
-    restoreY = 0;
-    if (loadDraft()) openSheet(null, null, true);   // the app was closed mid-draft: bring the draft back
+    const startNormal = async () => {
+      if (navigator.storage && navigator.storage.persist) navigator.storage.persist();
+      restoreState();
+      const wantView = view;
+      try { await render(); } catch (e) { logErr('render', e); }
+      try { localStorage.removeItem('cc-booting'); } catch (e) {}   // the start finished
+      migrateImages();
+      if (restoreY && view === wantView) { const y = restoreY; requestAnimationFrame(() => window.scrollTo(0, y)); }
+      restoreY = 0;
+      if (loadDraft()) openSheet(null, null, true);   // the app was closed mid-draft: bring the draft back
+    };
+    if (wasBooting) { logErr('restart', 'The previous start did not finish (the phone may have been hot or low on memory).'); showSafeStart(startNormal); }
+    else await startNormal();
   } catch (e) {
     $('main').innerHTML = '<div class="empty"><b>Storage unavailable</b>This browser blocked local storage. Try Safari or Chrome outside private mode.</div>';
   }

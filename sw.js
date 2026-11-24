@@ -1,5 +1,5 @@
 // Concept Cards service worker. Raise VERSION whenever you want installed copies to refresh their offline files (the Backup screen shows this number).
-const VERSION = 'cc-v34';
+const VERSION = 'cc-v35';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
