@@ -423,12 +423,19 @@ button.chip{border:0;font:inherit;font-size:12px;cursor:pointer}
 // Data model: an item is a card; a placement says where an item sits (parentId null = top level).
 // Keeping them separate lets one item appear in several branches later (linked copies).
 // Day 17: a short list of recent problems, shown on the Backup screen, so a failure leaves a trace
+function showLost() {
+  if (document.getElementById('lostbar')) return;
+  const d = document.createElement('div'); d.id = 'lostbar'; d.className = 'upd'; const t = document.createElement('span'); t.textContent = 'The phone disconnected the app\u2019s storage. Your text is kept. Reload to reconnect.';
+  const b = document.createElement('button'); b.type = 'button'; b.textContent = 'Reload'; b.onclick = () => location.reload(); d.append(t, b); document.body.append(d);
+}
+const maybeLost = e => { if (/connection.*lost|server lost/i.test(String((e && e.message) || ''))) showLost(); };
+function applyFormObj(d) { $('name').value = d.n || ''; favSync(); setSheetLinks((d.l || []).map(x => ({ url: x[0] || '', label: x[1] || '' }))); $('memo').value = d.m || ''; sheetG = new Set(d.g || []); sheetRating = d.r || 0; drawRating(); drawGpick(); }
 function showUpdate() {
   if (document.getElementById('upd')) return;
   const d = document.createElement('div'); d.id = 'upd'; d.className = 'upd'; const t = document.createElement('span'); t.textContent = 'A new version is ready.';
   const b = document.createElement('button'); b.type = 'button'; b.textContent = 'Reload'; b.onclick = () => location.reload(); d.append(t, b); document.body.append(d);
 }
-function logErr(where, e) { try { const a = JSON.parse(localStorage.getItem('cc-errors') || '[]'); a.push({ t: Date.now(), w: where, m: String((e && ((e.name ? e.name + ': ' : '') + (e.message || e))) || e || 'unknown').slice(0, 200) }); localStorage.setItem('cc-errors', JSON.stringify(a.slice(-20))); } catch (x) {} }
+function logErr(where, e) { try { const a = JSON.parse(localStorage.getItem('cc-errors') || '[]'), m = String((e && ((e.name ? e.name + ': ' : '') + (e.message || e))) || e || 'unknown').slice(0, 200), last = a[a.length - 1]; if (last && last.w === where && last.m === m && Date.now() - last.t < 600000) { last.c = (last.c || 1) + 1; last.t = Date.now(); } else a.push({ t: Date.now(), w: where, m }); localStorage.setItem('cc-errors', JSON.stringify(a.slice(-40))); } catch (x) {} }
 window.addEventListener('error', ev => logErr('page', ev.error || ev.message));
 window.addEventListener('unhandledrejection', ev => logErr('promise', ev.reason));
 let db, pickedBlob = null, urls = []; const noThumb = new Set();
@@ -881,7 +888,7 @@ function addDiag(main) {
   let a = []; try { a = JSON.parse(localStorage.getItem('cc-errors') || '[]'); } catch (e) {}
   const d = document.createElement('details'); d.className = 'hint diag'; const sm = document.createElement('summary'); sm.textContent = a.length ? 'Recent problems (' + a.length + ')' : 'No problems recorded'; d.append(sm);
   if (a.length) {
-    const txt = a.slice().reverse().map(x => new Date(x.t).toLocaleString() + ' · ' + x.w + ' · ' + x.m).join('\n');
+    const txt = a.slice().reverse().map(x => new Date(x.t).toLocaleString() + ' · ' + x.w + ' · ' + x.m + (x.c > 1 ? '  (×' + x.c + ')' : '')).join('\n');
     const pre = document.createElement('pre'); pre.textContent = txt; d.append(pre);
     const cp = document.createElement('button'); cp.type = 'button'; cp.textContent = 'Copy'; cp.onclick = () => { try { navigator.clipboard.writeText(txt); toast('Copied'); } catch (e) {} };
     const cl = document.createElement('button'); cl.type = 'button'; cl.textContent = 'Clear'; cl.onclick = () => { try { localStorage.removeItem('cc-errors'); } catch (e) {} render(); };
@@ -1446,7 +1453,8 @@ async function autoSave() {
     await put('items', n); editing.it = n; if (img) editing.img = img; pickedBlob = null; coverBlob = null; snap = st; extrasSaved = xv;
     if (editing.p && !editing.bumped) { editing.bumped = true; const np = { ...editing.p, order: Date.now() }; await put('placements', np); editing.p = np; }   // Day 17: edited cards rise to the top of the manual order, like new ones
     if (/^Auto-save failed/.test($('err').textContent)) $('err').textContent = '';
-  } catch (e) { logErr('auto-save', e); $('err').textContent = 'Auto-save failed (' + ((e && ((e.name || '') + ' ' + (e.message || ''))) || 'unknown').trim().slice(0, 90) + '). Your edits are still here and it will try again.'; }
+    try { localStorage.removeItem('cc-edit'); } catch (x) {}
+  } catch (e) { logErr('auto-save', e); maybeLost(e); try { if (editing) localStorage.setItem('cc-edit', JSON.stringify({ id: editing.it.id, o: formObj() })); } catch (x) {} $('err').textContent = 'Auto-save failed (' + ((e && ((e.name || '') + ' ' + (e.message || ''))) || 'unknown').trim().slice(0, 90) + '). Your edits are still here and it will try again.'; }
   finally { saving = false; }
 }
 // Day 15: one calm scroll. Safari already moves the page when a field is tapped, so we wait until the keyboard has settled
@@ -1483,13 +1491,27 @@ async function takeImage(blob) {   // the picture shown on screen is the one tha
   if (xCur >= 0 && sheetExtras[xCur]) { sheetExtras[xCur] = await shrink(blob, 600, 0.7); extrasVer++; paintExtra(xCur); drawExtras(); $('err').textContent = ''; return; }
   pickedBlob = await shrink(blob); setPreview(pickedBlob); $('err').textContent = ''; openCrop(pickedBlob);
 }
+async function clipImage() {   // finds a picture on the clipboard: the picture itself, one inside page markup, or one a copied web address points to
+  const seen = []; let url = null;
+  for (const ci of await navigator.clipboard.read()) {
+    seen.push(ci.types.join('+'));
+    const t = ci.types.find(x => x.startsWith('image/')); if (t) return { blob: await ci.getType(t) };
+    if (ci.types.includes('text/html')) {
+      const m = /<img[^>]+src=["']([^"']+)["']/i.exec(await (await ci.getType('text/html')).text());
+      if (m) { try { const r = await fetch(m[1]); if (r.ok) { const bl = await r.blob(); if (bl.type.startsWith('image/')) return { blob: bl }; } } catch (e) {} }
+    }
+    if (!url && ci.types.includes('text/uri-list')) url = (await (await ci.getType('text/uri-list')).text()).split(/\r?\n/).find(l => l && l[0] !== '#') || null;
+    if (!url && ci.types.includes('text/plain')) { const tx = (await (await ci.getType('text/plain')).text()).trim(); if (/^https?:\/\/\S+$/i.test(tx)) url = tx; }
+  }
+  if (url) { try { const r = await fetch(url); if (r.ok) { const bl = await r.blob(); if (bl.type.startsWith('image/')) return { blob: bl }; } } catch (e) {} }
+  logErr('clipboard-types', seen.join(' | ') || 'empty');
+  return { url };
+}
+const clipMessage = r => r.url ? 'Your phone copied only the picture\u2019s web address, and that site does not let the app download it. In Safari, long-press the picture and choose Copy (not Copy Link), or save it to Photos and use Choose image.' : 'No image on the clipboard. Long-press an image on a web page and choose Copy first.';
 $('pasteBtn').onclick = async () => {   // paste an image copied from a web page or another app
   try {
-    for (const ci of await navigator.clipboard.read()) {
-      const t = ci.types.find(x => x.startsWith('image/'));
-      if (t) { await takeImage(await ci.getType(t)); return; }
-    }
-    $('err').textContent = 'No image on the clipboard. Long-press an image on a web page and choose Copy first.';
+    const r = await clipImage(); if (r.blob) { await takeImage(r.blob); return; }
+    $('err').textContent = clipMessage(r);
   } catch (e) { $('err').textContent = 'Paste is blocked here. Tap the Name or Memo box, long-press, and choose Paste instead.'; }
 };
 document.addEventListener('paste', e => {   // pasting into any box in the open card sheet also works
@@ -1515,7 +1537,7 @@ $('save').onclick = async () => {
       await put('placements', { id: uid(), itemId: id, parentId: null, folderId: view && view !== 'all' && !view.startsWith('g:') ? view : null, order: Date.now() });
     }
     clearDraft(); closeSheet(); render();
-  } catch (e) { $('err').textContent = 'Could not save (' + ((e && ((e.name || '') + ' ' + (e.message || ''))) || 'unknown error').trim().slice(0, 140) + '). Your text is kept as a draft.'; }
+  } catch (e) { logErr('save', e); maybeLost(e); $('err').textContent = 'Could not save (' + ((e && ((e.name || '') + ' ' + (e.message || ''))) || 'unknown error').trim().slice(0, 140) + '). Your text is kept as a draft.'; }
 };
 
 $('del').onclick = async () => {
@@ -1623,21 +1645,14 @@ function paintExtra(i) { const pv = $('preview'); pv.textContent = ''; blobToURL
 function capSync() { $('imgLabel').textContent = xCur >= 0 ? 'Image · Extra ' + (xCur + 1) : (sheetExtras.length || xOpen) ? 'Image · Cover' : 'Image'; $('cropBtn').hidden = xCur >= 0 || !pvBlob; }
 let pendingExtraPaste = false;
 async function addExtraFrom(blob) { if (sheetExtras.length >= 2) return; sheetExtras.push(await shrink(blob, 600, 0.7)); extrasVer++; drawExtras(); $('err').textContent = ''; }
+function xmsgShow(t, box) { $('xmsg').firstElementChild.textContent = t; $('xpaste').hidden = !box; $('xmsg').hidden = false; if (box) { $('xpaste').value = ''; $('xpaste').focus(); } }
 async function pasteExtra() {
   $('xmsg').hidden = true; pendingExtraPaste = false;
   try {
-    const seen = [];
-    for (const ci of await navigator.clipboard.read()) {
-      seen.push(ci.types.join('+'));
-      const t = ci.types.find(x => x.startsWith('image/')); if (t) { await addExtraFrom(await ci.getType(t)); return; }
-      if (ci.types.includes('text/html')) {   // some apps put the picture inside web-page markup
-        const m = /<img[^>]+src=["']([^"']+)["']/i.exec(await (await ci.getType('text/html')).text());
-        if (m) { try { const r = await fetch(m[1]); if (r.ok) { await addExtraFrom(await r.blob()); return; } } catch (e) {} }
-      }
-    }
-    logErr('clipboard-types', seen.join(' | ') || 'empty');
+    const r = await clipImage(); if (r.blob) { await addExtraFrom(r.blob); return; }
+    if (r.url) { xmsgShow(clipMessage(r), false); return; }
   } catch (e) { logErr('clipboard-read', e); }
-  pendingExtraPaste = true; $('xmsg').hidden = false; $('xpaste').value = ''; $('xpaste').focus();   // fall back to a normal paste into a visible box
+  pendingExtraPaste = true; xmsgShow('Your phone did not hand over the picture directly. Long-press the box below and choose Paste.', true);
 }
 $('xtog').onclick = () => { xOpen = !xOpen; if (!xOpen) { pendingExtraPaste = false; $('xmsg').hidden = true; } if (!xOpen && xCur >= 0) restoreCover(); drawExtras(); };
 $('xfile').onchange = async () => { const f = $('xfile').files[0]; $('xfile').value = ''; if (!f || sheetExtras.length >= 2) return; sheetExtras.push(await shrink(f, 600, 0.7)); extrasVer++; drawExtras(); };
@@ -1871,6 +1886,10 @@ if ('serviceWorker' in navigator && location.protocol !== 'file:') {
       if (restoreY && view === wantView) { const y = restoreY; requestAnimationFrame(() => window.scrollTo(0, y)); }
       restoreY = 0;
       if (loadDraft()) openSheet(null, null, true);   // the app was closed mid-draft: bring the draft back
+      else {   // an edit of an existing card could not be saved: bring the unsaved text back
+        let ed = null; try { ed = JSON.parse(localStorage.getItem('cc-edit') || 'null'); } catch (e) {}
+        if (ed) { const it = (await all('items')).find(i => i.id === ed.id); if (it) { openSheet(null, it, true); applyFormObj(ed.o || {}); toast('Your last edits were restored'); } else { try { localStorage.removeItem('cc-edit'); } catch (e) {} } }
+      }
     };
     if (wasBooting) { logErr('restart', 'The previous start did not finish (the phone may have been hot or low on memory).'); showSafeStart(startNormal); }
     else await startNormal();
